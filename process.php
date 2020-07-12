@@ -1,31 +1,43 @@
 <?php
+ini_set("display_errors","Off");
 session_start();
 
 $account = $_POST['account'];
 $password = $_POST['password'];
 
-if ( !empty($account) && !empty($password)){
-    $cookie_jar = './cookie' ;
+$secret = "<insert-your-secret-key-here>";
+$response = $_POST['g-recaptcha-response'];
+
+$ch0 = curl_init();
+curl_setopt($ch0,CURLOPT_URL,'https://www.google.com/recaptcha/api/siteverify');
+curl_setopt($ch0, CURLOPT_POST, true);
+curl_setopt($ch0, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch0, CURLOPT_POSTFIELDS, array(
+	'secret' => $secret,
+	'response' => $response,
+	));
+$data = curl_exec($ch0);
+curl_close($ch0);
+$recaptcha = json_decode($data, true);
+
+if ($recaptcha["success"] && !empty($account) && !empty($password) ){
+    $cookie_jar = '/tmp/cookie' ;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, 'http://acdm3.tcssh.tc.edu.tw/csn4/Reg_stu.ASP');
     curl_setopt($ch, CURLOPT_POST, 1);
     $request = "txtS_NO=".$account."&txtPass=".$password;
     curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
-    //把返回來的cookie保存在$cookie_jar文件中
     curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_jar);
-    //設定返回的資料是否自動顯示
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    //設定是否顯示頭訊息
     curl_setopt($ch, CURLOPT_HEADER, false);
-    //設定是否輸出頁面內容
     curl_setopt($ch, CURLOPT_NOBODY, false);
     $content = curl_exec($ch);
     curl_close($ch);
 
-    
+
     if (strpos($content,"i_Stu.asp") == false){
-        echo "輸入錯誤，將跳轉回登入頁面";
-        echo header( "Refresh:3; url=login.php", true, 303);
+        echo "帳密驗證錯誤，將跳轉回登入頁面";
+        echo header( "Refresh:3; url=index.php", true, 303);
     }
     else {
         //get data after login
@@ -35,12 +47,10 @@ if ( !empty($account) && !empty($password)){
         curl_setopt($ch2, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch2, CURLOPT_COOKIEFILE, $cookie_jar);
         $orders = curl_exec($ch2);
-        //echo '&lt;pre&gt;';
-        //echo strip_tags($orders);
-        //echo $orders;
-        preg_match_all("/<td.*>(.*)<\/td>/U", $orders, $lists);
-        //echo '&lt;/pre&gt;';
-        curl_close($ch2);
+
+	preg_match_all("/<td.*>(.*)<\/td>/U", $orders, $lists);
+
+	curl_close($ch2);
 
         foreach($lists[0] as $key => $value){
             $lists[0][$key] = mb_convert_encoding($value,"UTF-8","BIG5");
@@ -51,8 +61,10 @@ if ( !empty($account) && !empty($password)){
 
         $record = array(
             '公'=>0,
-            '病'=>0,
-            '缺'=>0,
+			'病'=>0,
+			'事'=>0,
+			'曠'=>0,
+			'缺'=>0,
             '遲'=>0
         );
 
@@ -74,7 +86,13 @@ if ( !empty($account) && !empty($password)){
         }
 }
 else {
-  echo "錯誤";
+	echo "Error Code:";
+	if (!$recaptcha["success"]){
+		echo "1";
+	}
+	if(empty($account) || empty($password) ){
+  		echo "2";
+	}
 }
 
  ?>

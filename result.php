@@ -24,7 +24,7 @@ if ( isset($_SESSION['result']) && isset($_SESSION['updateTime']) ){
         <p>
           <?php
             $record = $_SESSION['result'];
-            echo "你的出缺席速查紀錄如下:"."<br>";
+            echo "你的出缺席速查紀錄如下(單位:節)"."<br>";
             foreach($record as $key => $value)
                 echo $key.":".$value."<br>";
             echo "<br>";
@@ -32,7 +32,7 @@ if ( isset($_SESSION['result']) && isset($_SESSION['updateTime']) ){
           ?>
         </p>
           <div class="row justify-content-center">
-            <a class="col-4 btn btn-primary" href="logout.php">按我退出</a>
+            <a class="col-4 btn btn-primary" href="reset.php">按我退出</a>
         </div>
       </div>
 
